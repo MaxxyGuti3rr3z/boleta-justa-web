@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Boleta Justa · sin servidor</title>
+<style>
+:root{--fondo:#0c0e12;--superficie:#14171d;--borde:#242a35;--tinta:#e8eaf0;--suave:#9aa3b2;
+--acento:#ffc233;--acento-tinta:#1a1400;--acento-suave:rgba(255,194,51,.12);
+--verde:#34d399;--verde-fondo:rgba(52,211,153,.1);--rojo:#f87171;--radio:14px}
+*{box-sizing:border-box}body{margin:0;background:var(--fondo);color:var(--tinta);
+font-family:system-ui,-apple-system,'Segoe UI',sans-serif;line-height:1.5}
+.wrap{max-width:900px;margin:0 auto;padding:24px}
+header{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.05rem;margin-bottom:28px}
+.rayo{background:var(--acento);color:var(--acento-tinta);border-radius:8px;padding:3px 8px}
+.privacidad{background:var(--verde-fondo);border:1px solid rgba(52,211,153,.4);border-radius:var(--radio);
+padding:16px 18px;margin-bottom:22px;color:var(--verde);font-size:.9rem}
+h1{font-size:clamp(1.7rem,4vw,2.6rem);margin:0 0 8px;line-height:1.15}
+.lead{color:var(--suave);margin:0 0 28px;max-width:620px}
+.card{background:var(--superficie);border:1px solid var(--borde);border-radius:var(--radio);padding:24px;margin-bottom:18px}
+.drop{display:block;border:2px dashed var(--borde);border-radius:12px;padding:34px 20px;text-align:center;cursor:pointer;transition:.15s}
+.drop:hover,.drop.arrastrando{border-color:var(--acento);background:var(--acento-suave)}
+button,.btn{background:var(--acento);color:var(--acento-tinta);border:0;border-radius:10px;
+padding:12px 20px;font-weight:700;font-size:.92rem;cursor:pointer;font-family:inherit}
+button:disabled{opacity:.4;cursor:not-allowed}
+input[type=file]{display:none}
+.fila{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px}
+.estado{color:var(--suave);font-size:.85rem}
+.hist-item{display:flex;gap:10px;align-items:center;justify-content:space-between;
+  border-top:1px solid var(--borde);padding:9px 0;font-size:.82rem}
+.hist-item button{padding:6px 10px;font-size:.75rem}
+#resultado:empty{display:none}
+.expl{border-left:4px solid var(--verde);background:var(--superficie);border-radius:var(--radio);padding:22px 24px;margin-bottom:16px}
+.expl.a_revisar{border-left-color:var(--acento)}
+.expl h2{font-size:1.2rem;margin:0 0 6px}
+.resumen{color:var(--suave);font-size:.9rem;margin:0 0 14px}
+.item{display:grid;grid-template-columns:26px 1fr;gap:10px;padding:11px 0;border-top:1px solid var(--borde)}
+.item b{font-size:.9rem}.item p{margin:2px 0 0;color:var(--suave);font-size:.85rem}
+.acciones{background:var(--acento-suave);border-radius:10px;padding:14px 16px;margin-top:16px;font-size:.82rem}
+details{margin-top:14px}summary{cursor:pointer;color:var(--acento);font-size:.85rem;font-weight:700}
+details div{padding:7px 0;border-top:1px solid var(--borde);font-size:.82rem;color:var(--suave)}
+footer{color:var(--suave);font-size:.75rem;margin-top:28px;border-top:1px solid var(--borde);padding-top:16px}
+.error{color:var(--rojo)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="rayo">⚡</span> Boleta Justa <span style="color:var(--verde);font-size:.75rem">· sin servidor</span></header>
+
+  <div class="privacidad"><b>Tu boleta nunca sale de tu dispositivo.</b> El PDF se lee en este navegador,
+    nunca se sube, no se guarda y no se comparte. Podés usar esto incluso desconectado de internet
+    (salvo la primera carga de la librería de lectura de PDF).</div>
+
+  <h1>Auditá tu boleta de luz sin subirla a ningún lado</h1>
+  <p class="lead">Elegí el PDF de EJESA y te explicamos, con palabras simples, si los cargos
+    coinciden con el cuadro oficial de ese trimestre.</p>
+
+  <div class="card">
+    <label class="drop" id="drop" for="archivo">
+      <div style="font-size:2rem">📄</div>
+      <div><b>Tocá acá o arrastrá tu boleta (PDF)</b></div>
+      <div class="estado" id="nombre">Se procesa 100% en tu computadora</div>
+    </label>
+    <input type="file" id="archivo" accept="application/pdf,.pdf">
+    <div class="fila"><button id="analizar" disabled>Analizar mi boleta</button>
+      <span class="estado" id="estado"></span></div>
+  </div>
+
+  <div id="resultado"></div>
+
+  <div class="card" id="hist-card">
+    <span class="dec-tag">Historial en tu dispositivo</span>
+    <h2>Mis análisis guardados</h2>
+    <p class="card-sub">Se guardan solo en este navegador. Sin cuenta, sin servidor y sin datos personales.</p>
+    <div class="fila">
+      <button id="guardar-local">Guardar análisis actual</button>
+      <button id="exportar-json">Descargar JSON</button>
+      <label class="btn" for="importar-json" style="cursor:pointer">Cargar JSON</label>
+      <input type="file" id="importar-json" accept="application/json,.json" hidden>
+      <button id="borrar-todo">Borrar todo</button>
+    </div>
+    <div id="hist-lista" class="estado" style="margin-top:14px"></div>
+  </div>
+
+  <footer>
+    Cuadros tarifarios del Boletín Oficial de Jujuy (Res. 168/296/420 de 2025 y 81/227/297 de 2026).
+    Orientación vecinal, no dictamen legal. Si algo no coincide, pedí el desglose a EJESA.
+  </footer>
+</div>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
