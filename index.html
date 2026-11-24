@@ -3,147 +3,349 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0c0e12">
+<meta name="theme-color" content="#F7F1E6">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png" type="image/png">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; form-action 'self'; base-uri 'self'; object-src 'none'">
-<title>Boleta Justa · sin servidor</title>
+<title>Boleta Justa — auditá tu boleta de luz</title>
 <style>
-:root{--fondo:#0c0e12;--superficie:#14171d;--borde:#242a35;--tinta:#e8eaf0;--suave:#9aa3b2;
---acento:#ffc233;--acento-tinta:#1a1400;--acento-suave:rgba(255,194,51,.12);
---verde:#34d399;--verde-fondo:rgba(52,211,153,.1);--rojo:#f87171;--radio:14px}
-*{box-sizing:border-box}body{margin:0;background:var(--fondo);color:var(--tinta);
-font-family:system-ui,-apple-system,'Segoe UI',sans-serif;line-height:1.5}
-.wrap{max-width:900px;margin:0 auto;padding:24px}
-header{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.05rem;margin-bottom:28px}
-.rayo{background:var(--acento);color:var(--acento-tinta);border-radius:8px;padding:3px 8px}
-.privacidad{background:var(--verde-fondo);border:1px solid rgba(52,211,153,.4);border-radius:var(--radio);
-padding:16px 18px;margin-bottom:22px;color:var(--verde);font-size:.9rem}
+:root{
+ --bg:#F7F1E6; --surf:#FFFBF3; --surf2:#F3E9D8; --terra:#A4462E; --terra-suave:#F3E0D6;
+ --ink:#2E2018; --muted:#5C4A3D; --ochre:#C98A2E; --cardon:#3F6B4F; --turq:#1B7282;
+ --border:#DCCDB8; --radio:18px; --pad:16px;
+ --hfont:Georgia,'Times New Roman',serif;
+ --bfont:system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (min-width:900px){:root{--pad:28px}}
+*{box-sizing:border-box}
+html{background:var(--bg);scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.62 var(--bfont);-webkit-font-smoothing:antialiased}
+.guarda{height:18px;background-image:
+ repeating-linear-gradient(45deg,transparent 0 9px,rgba(201,138,46,.20) 9px 10px,transparent 10px 19px),
+ repeating-linear-gradient(-45deg,transparent 0 9px,rgba(201,138,46,.20) 9px 10px,transparent 10px 19px)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 56px}
+header{display:flex;align-items:center;gap:10px;padding:22px 0 12px;font:700 19px/1 var(--hfont)}
+.rayo{background:var(--terra);color:#fff;border-radius:9px;padding:7px 10px;font-size:17px}
+.nav{display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;white-space:nowrap;
+ position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0 12px;
+ border-bottom:1px solid var(--border);scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.nav::-webkit-scrollbar{display:none}
+.nav a{flex:0 0 auto;display:inline-flex;align-items:center;min-height:40px;padding:7px 12px;
+ border:2px solid var(--border);border-radius:999px;color:var(--ink);font-size:17px;
+ font-weight:700;text-decoration:none;background:var(--surf)}
+.nav a:hover{border-color:var(--terra);color:var(--terra)}
+[id]{scroll-margin-top:76px}
+h1,h2{font-family:var(--hfont)}
+h1{font-size:clamp(32px,7vw,50px);line-height:1.1;letter-spacing:-.01em;margin:0 0 12px;color:#FFFBF3;max-width:16ch}
+h2{font-size:clamp(25px,3.4vw,32px);line-height:1.2;margin:0 0 14px}
+p{margin:0 0 14px}
+a{color:var(--turq)}
+.franja,.card{padding:var(--pad);border-radius:var(--radio);margin:0 0 22px}
+.card{background:var(--surf);border:1px solid var(--border)}
+details.card{padding:0}
+details.card>summary{font:700 25px/1.25 var(--hfont);cursor:pointer;padding:var(--pad)}
+.hist-contenido{padding:0 var(--pad) var(--pad)}
+details.backup{margin-top:18px;border:1px solid var(--border);border-radius:12px;background:var(--surf2)}
+details.backup>summary{cursor:pointer;color:var(--turq);font-weight:700;font-size:17px;padding:14px 16px}
+details.backup>div{padding:0 16px 16px}
+dialog{border:1px solid var(--border);border-radius:var(--radio);background:var(--surf);color:var(--ink);
+ padding:var(--pad);max-width:420px;max-width:min(420px,92vw)}
+dialog::backdrop{background:rgba(46,32,24,.55)}
+dialog h2{font-size:25px}
+.franja-crema{background:var(--bg)}
+.franja-terracota{background:var(--terra-suave)}
+.franja-surf{background:var(--surf);border:1px solid var(--border)}
+.dos-columnas{display:grid;gap:28px;align-items:center}
+@media (min-width:900px){.dos-columnas{grid-template-columns:1fr 1fr}.dos-columnas.invertida>figure{order:2}}
+figure{margin:0}
+figure img,img.foto{display:block;width:100%;height:auto;border-radius:var(--radio)}
+figcaption{font-size:17px;color:var(--muted);margin-top:8px}
+.hero{position:relative;border-radius:var(--radio);overflow:hidden;margin:0 0 26px;min-height:330px;
+ display:flex;align-items:center}
+.hero picture,.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hero img{object-position:center 45%}
+.hero .velo{position:absolute;inset:0;background:linear-gradient(90deg,rgba(46,32,24,.86) 0%,rgba(46,32,24,.68) 55%,rgba(46,32,24,.34) 100%)}
+.hero .contenido{position:relative;z-index:1;padding:34px 30px;max-width:660px}
+.hero .lead{color:#FFFBF3;font-size:19px;line-height:1.55;max-width:42ch;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.etiqueta{font-size:17px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--turq);margin:0 0 8px}
+.hero .etiqueta{color:#F3E0D6}
+.cta{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:62px;
+ padding:16px 30px;border-radius:12px;border:2px solid var(--terra);background:var(--terra);
+ color:#fff;font:700 19px/1 var(--bfont);cursor:pointer;text-decoration:none;box-shadow:0 4px 0 rgba(120,45,25,.35)}
+.cta:hover{background:#8E3B2F}
+.cta:disabled{background:var(--terra-suave);color:#6B4B3E;border-style:dashed;box-shadow:none;cursor:not-allowed}
+button,.btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:13px 22px;
+ border-radius:10px;font:700 17px/1 var(--bfont);cursor:pointer;font-family:inherit;text-decoration:none}
+.primario{background:var(--terra);color:#fff;border:2px solid var(--terra)}
+.secundario{background:transparent;color:var(--terra);border:2px solid var(--terra)}
+button:disabled{opacity:.6;cursor:not-allowed}
+.fila{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
+.estado{color:var(--muted)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.drop{display:block;border:2px dashed var(--border);border-radius:var(--radio);padding:28px 18px;
+ text-align:center;cursor:pointer;background:var(--surf2);margin:14px 0}
+.drop:hover{border-color:var(--terra)}
+.drop.arrastrando{border-color:var(--terra);background:var(--surf)}
+#archivo:focus-visible + label{outline:3px solid var(--turq);outline-offset:3px}
+.drop-ico{font-size:34px;line-height:1;margin-bottom:6px}
+.privacidad{font-size:17px;color:var(--cardon);border-left:4px solid var(--cardon);padding:10px 0 10px 14px;margin:0 0 20px}
 .update-banner{display:flex;gap:12px;align-items:center;justify-content:space-between;
-  background:var(--acento-suave);border:1px solid rgba(255,194,51,.5);border-radius:var(--radio);
-  padding:12px 16px;margin-bottom:18px;font-size:.85rem}
+ border-bottom:1px dashed var(--border);padding:8px 0;margin:0 0 18px;font-size:17px;color:var(--muted)}
 .update-banner[hidden]{display:none}
-h1{font-size:clamp(1.7rem,4vw,2.6rem);margin:0 0 8px;line-height:1.15}
-.lead{color:var(--suave);margin:0 0 28px;max-width:620px}
-.card{background:var(--superficie);border:1px solid var(--borde);border-radius:var(--radio);padding:24px;margin-bottom:18px}
-.drop{display:block;border:2px dashed var(--borde);border-radius:12px;padding:34px 20px;text-align:center;cursor:pointer;transition:.15s}
-.drop:hover,.drop.arrastrando{border-color:var(--acento);background:var(--acento-suave)}
-button,.btn{background:var(--acento);color:var(--acento-tinta);border:0;border-radius:10px;
-padding:12px 20px;font-weight:700;font-size:.92rem;cursor:pointer;font-family:inherit}
-button:disabled{opacity:.4;cursor:not-allowed}
-input[type=file]{display:none}
-.fila{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px}
-.estado{color:var(--suave);font-size:.85rem}
-.hist-item{display:flex;gap:10px;align-items:center;justify-content:space-between;
-  border-top:1px solid var(--borde);padding:9px 0;font-size:.82rem}
-.hist-item button{padding:6px 10px;font-size:.75rem}
-#reclamo-card input,#reclamo-card textarea{background:var(--superficie2);border:1px solid var(--borde);
-  color:var(--tinta);border-radius:8px;padding:9px 11px;font-family:inherit;font-size:.85rem}
-#reclamo-card textarea{width:100%;margin-top:12px;resize:vertical;line-height:1.5}
-#reclamo-card label{font-size:.8rem;color:var(--suave)}
-#manual-card[hidden]{display:none}
-.campo{display:block;margin:12px 0}
-.campo span{display:block;font-size:.82rem;color:var(--tinta);margin-bottom:4px}
-.campo small{display:block;color:var(--suave);font-size:.72rem;margin-top:4px;line-height:1.4}
-.campo input{width:100%;background:var(--superficie2);border:1px solid var(--borde);
-  color:var(--tinta);border-radius:8px;padding:10px 12px;font-family:inherit}
-.campo.checkbox{display:flex;gap:10px;align-items:flex-start}
-.campo.checkbox input{width:auto;margin-top:2px}
+.update-banner button{min-height:40px;padding:8px 14px;font-size:17px}
 #resultado:empty{display:none}
-.expl{border-left:4px solid var(--verde);background:var(--superficie);border-radius:var(--radio);padding:22px 24px;margin-bottom:16px}
-.expl.a_revisar{border-left-color:var(--acento)}
-.expl.sin_cuadro{border-left-color:var(--acento)}
-.expl h2{font-size:1.2rem;margin:0 0 6px}
-.resumen{color:var(--suave);font-size:.9rem;margin:0 0 14px}
-.item{display:grid;grid-template-columns:26px 1fr;gap:10px;padding:11px 0;border-top:1px solid var(--borde)}
-.item b{font-size:.9rem}.item p{margin:2px 0 0;color:var(--suave);font-size:.85rem}
-.acciones{background:var(--acento-suave);border-radius:10px;padding:14px 16px;margin-top:16px;font-size:.82rem}
-details{margin-top:14px}summary{cursor:pointer;color:var(--acento);font-size:.85rem;font-weight:700}
-details div{padding:7px 0;border-top:1px solid var(--borde);font-size:.82rem;color:var(--suave)}
-footer{color:var(--suave);font-size:.75rem;margin-top:28px;border-top:1px solid var(--borde);padding-top:16px}
-.error{color:var(--rojo)}
+.resultado{background:var(--surf);border:1px solid var(--border);border-radius:var(--radio);
+ padding:var(--pad);margin:0 0 24px}
+.contexto{font-size:17px;color:var(--muted);margin:0 0 12px}
+#titulo-resultado:focus{outline:3px solid var(--turq);outline-offset:4px}
+.fuentes-detalle{margin-top:10px}
+.fuentes-detalle summary{cursor:pointer;color:var(--turq);font-weight:700;font-size:17px}
+.fuentes-detalle p{font-size:17px;color:var(--muted);margin:8px 0 4px}
+.fuentes-detalle ul{font-size:17px;color:var(--muted);margin:0;padding-left:20px}
+.estado-resultado{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:17px;padding:7px 14px;
+ border-radius:999px;margin:0 0 14px}
+.estado-resultado.coincide{background:rgba(63,107,79,.14);color:var(--cardon)}
+.estado-resultado.senales{background:rgba(201,138,46,.18);color:var(--terra)}
+.estado-resultado.sin-cuadro{background:rgba(27,114,130,.12);color:var(--turq)}
+.detalle{list-style:none;padding:0;margin:0}
+.item{display:flex;gap:12px;padding:14px 0;border-top:1px solid var(--border)}
+.item:first-child{border-top:0}
+.item .icono{flex:0 0 26px;font-size:20px;line-height:1.3}
+.item b,.pasos b,.pasos p{font-size:17px}
+.item p{margin:3px 0 0;color:var(--muted)}
+.item.aviso{border-left:4px solid var(--turq);background:rgba(27,114,130,.07);border-radius:10px;
+ padding:12px 14px 12px 10px;margin:8px 0;border-top:0}
+.acciones{background:var(--surf2);border-radius:12px;padding:14px 16px;margin-top:18px}
+.acciones ul{margin:8px 0 0;padding-left:20px}
+.acciones li{margin:6px 0}
+.botones-resultado{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}
+ol.pasos{list-style:none;padding:0;margin:0}
+ol.pasos li{display:flex;gap:14px;padding:13px 0;border-top:1px solid var(--border)}
+ol.pasos li:first-child{border-top:0}
+.num{flex:0 0 36px;height:36px;border-radius:50%;background:var(--bg);color:var(--terra);
+ border:2px solid var(--terra);display:grid;place-items:center;font-weight:700}
+.pasos p{margin:2px 0 0;color:var(--muted)}
+ul.revisa,ul.no{list-style:none;padding:0;margin:0}
+ul.revisa li,ul.no li{padding:9px 0;border-top:1px solid var(--border)}
+ul.revisa li:first-child,ul.no li:first-child{border-top:0}
+ul.revisa li::before{content:'◆';color:var(--ochre);margin-right:10px}
+ul.no li::before{content:'—';color:var(--muted);margin-right:10px}
+.ejemplo .resultado-ejemplo{background:var(--surf2);border-radius:12px;padding:16px;margin-top:14px;border-left:4px solid var(--cardon)}
+.ejemplo .senal-ejemplo{background:var(--surf2);border:1px solid var(--border);border-left:4px solid var(--ochre);
+ border-radius:10px;padding:12px 14px;margin-top:12px}
+.independiente{color:var(--muted);border-top:1px solid var(--border);padding-top:18px;margin:26px 0}
+details{margin-top:26px}
+.glosario{margin:40px 0}
+summary{cursor:pointer;color:var(--turq);font-weight:700;font-size:17px}
+details div{padding:10px 0;border-top:1px solid var(--border);color:var(--muted)}
+.hist-item{display:flex;gap:10px;align-items:center;justify-content:space-between;border-top:1px solid var(--border);padding:11px 0}
+.hist-item button{min-height:44px;padding:8px 12px;font-size:17px}
+#reclamo-card input,#reclamo-card textarea{background:var(--surf2);border:1px solid var(--border);color:var(--ink);
+ border-radius:10px;padding:11px 12px;font-family:inherit;font-size:17px}
+#reclamo-card textarea{width:100%;margin-top:12px;resize:vertical}
+#reclamo-card label{color:var(--muted)}
+.campo{display:block;margin:14px 0}
+.campo span{display:block;margin-bottom:4px}
+.campo small{display:block;color:var(--muted);margin-top:4px}
+.campo input{width:100%;background:var(--surf2);border:1px solid var(--border);color:var(--ink);
+ border-radius:10px;padding:11px 12px;font-family:inherit;font-size:17px}
+.campo.checkbox{display:flex;gap:10px;align-items:flex-start}
+.campo.checkbox input{width:auto;margin-top:3px}
+footer{color:var(--muted);border-top:1px solid var(--border);padding-top:18px;margin-top:28px}
+footer a{font-weight:700}
+:focus-visible{outline:3px solid var(--turq);outline-offset:3px}
+@media (max-width:420px){.wrap{padding:0 16px 44px}.hero{min-height:300px}.hero .contenido{padding:26px 20px}.lead{font-size:18px}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+@media (prefers-color-scheme:dark){
+ :root{--bg:#1B1714;--surf:#261F1A;--surf2:#322922;--terra-suave:#3A2A22;--ink:#F7EFE4;--muted:#D2C1AE;
+  --terra:#E0825F;--ochre:#E0AE55;--cardon:#7FB693;--turq:#6BC7D4;--border:#4A3D33}
+ .cta{color:#1B1714}.primario{color:#1B1714}
+ .num{background:var(--surf2)}
+ .item.aviso,.ejemplo .resultado-ejemplo,.ejemplo .senal-ejemplo{background:var(--surf2)}
+ .guarda{background-image:
+  repeating-linear-gradient(45deg,transparent 0 9px,rgba(224,174,85,.16) 9px 10px,transparent 10px 19px),
+  repeating-linear-gradient(-45deg,transparent 0 9px,rgba(224,174,85,.16) 9px 10px,transparent 10px 19px)}
+}
 </style>
 </head>
 <body>
+<div class="guarda" aria-hidden="true"></div>
 <div class="wrap">
-  <header><span class="rayo">⚡</span> Boleta Justa <span style="color:var(--verde);font-size:.75rem">· sin servidor</span></header>
+<header><span class="rayo" aria-hidden="true">⚡</span> Boleta Justa</header>
+<nav class="nav" aria-label="Navegación principal">
+ <a href="#como-titulo">Cómo funciona</a>
+ <a href="#subida-titulo">Analizar</a>
+ <a href="#hist-titulo">Historial</a>
+ <a href="#glosario">Glosario</a>
+</nav>
 
-  <div class="privacidad"><b>Tu boleta nunca sale de tu dispositivo.</b> El PDF se lee en este navegador,
-    nunca se sube, no se guarda y no se comparte. Podés usar esto incluso desconectado de internet
-    (salvo la primera carga de la librería de lectura de PDF).</div>
+<main>
+<section class="hero">
+ <picture>
+  <source media="(min-width: 900px)" srcset="./img/hornocal-1600.webp">
+  <img src="./img/hornocal-800.webp" alt="Franjas de colores de la Serranía de Hornocal, cerca de Humahuaca, Jujuy" width="1600" height="760" fetchpriority="high">
+ </picture>
+ <div class="velo" aria-hidden="true"></div>
+ <div class="contenido">
+  <p class="etiqueta">Hecho en Jujuy</p>
+  <h1>Subí tu boleta de luz.</h1>
+  <p class="lead">Te mostramos qué te cobraron, si coincide con el cuadro oficial y qué podés reclamar. Tu PDF no sale de tu celular.</p>
+ </div>
+</section>
 
-  <div class="update-banner" id="update-banner" hidden role="status" aria-live="polite">
-    <span>Hay una nueva versión de los cuadros tarifarios. Actualizá para verla.</span>
-    <button type="button" id="btn-actualizar" aria-label="Actualizar a la nueva versión">Actualizar</button>
-  </div>
+<section class="franja franja-crema" aria-labelledby="como-titulo">
+ <div>
+  <p class="etiqueta">Cómo funciona</p>
+  <h2 id="como-titulo">Tres pasos, sin vueltas</h2>
+  <ol class="pasos">
+   <li><span class="num" aria-hidden="true">1</span><div><b>Subí tu boleta.</b><p>Elegí el PDF desde tu celular o tu computadora.</p></div></li>
+   <li><span class="num" aria-hidden="true">2</span><div><b>La leemos acá.</b><p>El archivo se abre en tu navegador y no se sube a ningún lado.</p></div></li>
+   <li><span class="num" aria-hidden="true">3</span><div><b>Mirá el resultado.</b><p>Te mostramos qué coincide y qué conviene revisar.</p></div></li>
+  </ol>
+ </div>
+</section>
 
-  <h1>Auditá tu boleta de luz sin subirla a ningún lado</h1>
-  <p class="lead">Elegí el PDF de EJESA y te explicamos, con palabras simples, si los cargos
-    coinciden con el cuadro oficial de ese trimestre.</p>
+<section class="franja franja-surf" aria-labelledby="subida-titulo">
+ <h2 id="subida-titulo">Subí tu boleta</h2>
+ <input type="file" id="archivo" accept="application/pdf,.pdf" class="sr-only">
+ <label class="drop" id="drop" for="archivo">
+  <div class="drop-ico" aria-hidden="true">📄</div>
+  <div><b>Tocá acá o arrastrá tu boleta (PDF)</b></div>
+  <div class="estado" id="nombre">Se procesa 100% en tu dispositivo</div>
+ </label>
+ <div class="fila"><button id="analizar" class="cta" disabled>Analizar mi boleta</button>
+  <span class="estado" id="estado" role="status" aria-live="polite">Primero elegí tu PDF.</span></div>
+</section>
 
-  <div class="card">
-    <label class="drop" id="drop" for="archivo">
-      <div style="font-size:2rem">📄</div>
-      <div><b>Tocá acá o arrastrá tu boleta (PDF)</b></div>
-      <div class="estado" id="nombre">Se procesa 100% en tu computadora</div>
-    </label>
-    <input type="file" id="archivo" accept="application/pdf,.pdf">
-    <div class="fila"><button id="analizar" disabled>Analizar mi boleta</button>
-      <span class="estado" id="estado"></span></div>
-  </div>
+<p class="privacidad">Tu boleta se lee en tu dispositivo. No se sube, no se guarda, no se comparte. La primera visita necesita internet para instalar la app; después funciona sin conexión.</p>
 
-  <div id="resultado"></div>
-  <p id="accion-estado" class="estado" role="status" aria-live="polite"></p>
+<p class="update-banner" id="update-banner" hidden role="status" aria-live="polite">
+ <span>Hay una nueva versión de los cuadros. Actualizá para verla.</span>
+ <button type="button" id="btn-actualizar" class="secundario" aria-label="Actualizar a la nueva versión">Actualizar</button>
+</p>
 
-  <div class="card" id="manual-card" hidden>
-    <span class="dec-tag">Carga manual</span>
-    <h2>Cargá los datos de tu boleta</h2>
-    <p class="card-sub">Sin OCR: completá los renglones que figuran en tu boleta. Solo se usan datos de facturación.</p>
-    <form id="manual-form" novalidate>
-      <div id="manual-campos"></div>
-      <div class="fila">
-        <button type="submit" aria-label="Analizar los datos cargados manualmente">Analizar datos cargados</button>
-      </div>
-    </form>
-  </div>
+<div id="resultado"></div>
+<p id="accion-estado" class="estado" role="status" aria-live="polite"></p>
 
-  <div class="card" id="reclamo-card" hidden>
-    <span class="dec-tag">Solicitud de desglose</span>
-    <h2>Prepará una solicitud a EJESA</h2>
-    <p class="card-sub">Completá tus datos a mano: no se guardan ni se envían. El texto se arma en este navegador y lo copiás o descargás.</p>
+<details class="card" id="hist-card">
+ <summary id="hist-titulo">Mis análisis guardados</summary>
+ <div class="hist-contenido">
+  <p class="card-sub">Se guardan solo en este navegador. Sin cuenta, sin servidor y sin datos personales.</p>
+  <div class="fila"><button id="guardar-local" class="primario">Guardar análisis actual</button></div>
+  <div id="hist-lista" class="estado" style="margin-top:14px"></div>
+  <details class="backup">
+   <summary>Copia de seguridad</summary>
+   <div>
+    <p>Sirve para pasar tu historial a otro celular o no perderlo si borrás los datos del navegador.</p>
     <div class="fila">
-      <label for="rec-nombre">Nombre del titular</label>
-      <input id="rec-nombre" placeholder="[COMPLETAR]" autocomplete="off" aria-label="Nombre del titular, no se guarda">
-      <label for="rec-suministro">N° de suministro</label>
-      <input id="rec-suministro" placeholder="[COMPLETAR]" autocomplete="off" aria-label="Número de suministro, no se guarda">
+     <button id="exportar-json" class="secundario">Guardar copia de seguridad</button>
+     <label class="btn secundario" for="importar-json" style="cursor:pointer">Recuperar copia de seguridad</label>
+     <input type="file" id="importar-json" accept="application/json,.json" class="sr-only">
     </div>
-    <div class="fila">
-      <button type="button" id="btn-rec-generar" aria-label="Generar texto de la solicitud">Generar texto</button>
-      <button type="button" id="btn-rec-copiar" aria-label="Copiar la solicitud" disabled>Copiar</button>
-      <button type="button" id="btn-rec-descargar" aria-label="Descargar la solicitud como txt" disabled>Descargar .txt</button>
-    </div>
-    <textarea id="rec-texto" rows="12" readonly aria-label="Texto de la solicitud generada"></textarea>
-  </div>
+   </div>
+  </details>
+  <div class="fila"><button id="borrar-todo" class="secundario">Borrar mis análisis</button></div>
+ </div>
+</details>
 
-  <div class="card" id="hist-card">
-    <span class="dec-tag">Historial en tu dispositivo</span>
-    <h2>Mis análisis guardados</h2>
-    <p class="card-sub">Se guardan solo en este navegador. Sin cuenta, sin servidor y sin datos personales.</p>
-    <div class="fila">
-      <button id="guardar-local">Guardar análisis actual</button>
-      <button id="exportar-json">Descargar JSON</button>
-      <label class="btn" for="importar-json" style="cursor:pointer">Cargar JSON</label>
-      <input type="file" id="importar-json" accept="application/json,.json" hidden>
-      <button id="borrar-todo">Borrar todo</button>
-    </div>
-    <div id="hist-lista" class="estado" style="margin-top:14px"></div>
-  </div>
+<dialog id="dialogo-borrar" aria-labelledby="dialogo-borrar-titulo" aria-describedby="dialogo-borrar-mensaje">
+ <h2 id="dialogo-borrar-titulo">Borrar mis análisis</h2>
+ <p id="dialogo-borrar-mensaje"></p>
+ <div class="fila">
+  <button type="button" id="confirmar-borrado" class="primario">Sí, borrar</button>
+  <button type="button" id="cancelar-borrado" class="secundario">Cancelar</button>
+ </div>
+</dialog>
 
-  <footer>
-    Cuadros tarifarios del Boletín Oficial de Jujuy (Res. 168/296/420 de 2025 y 81/227/297 de 2026).
-    Orientación vecinal, no dictamen legal. Si algo no coincide, pedí el desglose a EJESA.
-    <div id="version-cuadros" class="estado" style="margin-top:8px"></div>
-  </footer>
+<section class="card" id="manual-card" hidden aria-labelledby="manual-titulo">
+ <p class="etiqueta">Carga manual</p>
+ <h2 id="manual-titulo">Cargá los datos de tu boleta</h2>
+ <p class="card-sub">Sin OCR: completá los renglones que figuran en tu boleta. Solo se usan datos de facturación.</p>
+ <form id="manual-form" novalidate>
+  <div id="manual-campos"></div>
+  <div class="fila"><button type="submit" class="primario" aria-label="Analizar los datos cargados manualmente">Analizar datos cargados</button></div>
+ </form>
+</section>
+
+<section class="card" id="reclamo-card" hidden aria-labelledby="reclamo-titulo">
+ <p class="etiqueta">Solicitud de desglose</p>
+ <h2 id="reclamo-titulo">Prepará una solicitud a EJESA</h2>
+ <p class="card-sub">Completá tus datos a mano: no se guardan ni se envían. El texto se arma en este navegador y lo copiás o descargás.</p>
+ <div class="fila">
+  <label for="rec-nombre">Nombre del titular</label>
+  <input id="rec-nombre" placeholder="[COMPLETAR]" autocomplete="off" aria-label="Nombre del titular, no se guarda">
+  <label for="rec-suministro">N° de suministro</label>
+  <input id="rec-suministro" placeholder="[COMPLETAR]" autocomplete="off" aria-label="Número de suministro, no se guarda">
+ </div>
+ <div class="fila">
+  <button type="button" id="btn-rec-generar" class="primario" aria-label="Generar texto de la solicitud">Generar texto</button>
+  <button type="button" id="btn-rec-copiar" class="secundario" aria-label="Copiar la solicitud" disabled>Copiar</button>
+  <button type="button" id="btn-rec-descargar" class="secundario" aria-label="Descargar la solicitud como txt" disabled>Descargar .txt</button>
+ </div>
+ <textarea id="rec-texto" rows="12" readonly aria-label="Texto de la solicitud generada"></textarea>
+</section>
+
+<section class="franja franja-terracota dos-columnas invertida" aria-labelledby="revisa-titulo">
+ <div>
+  <p class="etiqueta">Qué revisamos</p>
+  <h2 id="revisa-titulo">Cinco renglones de tu boleta</h2>
+  <ul class="revisa">
+   <li><b>El cargo fijo:</b> lo que pagás por tener el servicio.</li>
+   <li><b>El uso de red:</b> postes, cables y mantenimiento.</li>
+   <li><b>El precio de la luz:</b> cuánto se cobra por cada kWh.</li>
+   <li><b>La tarifa social:</b> si el descuento aparece en su renglón.</li>
+   <li><b>Los cargos por pago tarde:</b> si aparecen y si se podían cobrar en esa fecha.</li>
+  </ul>
+ </div>
+ <figure>
+  <img class="foto" src="./img/quebrada-tilcara-800.webp" srcset="./img/quebrada-tilcara-800.webp 800w, ./img/quebrada-tilcara-1600.webp 1600w" sizes="(max-width: 900px) 100vw, 480px" alt="Valle de la Quebrada de Humahuaca con cardones y serranías al fondo, cerca de Tilcara" width="1600" height="420" loading="lazy" decoding="async">
+  <figcaption>Cardones y serranías en la Quebrada de Humahuaca.</figcaption>
+ </figure>
+</section>
+
+<section class="franja franja-crema dos-columnas" aria-labelledby="no-titulo">
+ <div>
+  <p class="etiqueta">Qué no hacemos</p>
+  <h2 id="no-titulo">Límites claros</h2>
+  <ul class="no">
+   <li>No damos veredictos legales.</li>
+   <li>No calculamos deudas, créditos ni saldos.</li>
+   <li>No reclamamos por vos.</li>
+  </ul>
+  <p>Marcamos señales para que verifiques y te ayudamos a pedir el desglose.</p>
+ </div>
+ <figure>
+  <img class="foto" src="./img/salinas-800.webp" srcset="./img/salinas-800.webp 800w, ./img/salinas-1600.webp 1600w" sizes="(max-width: 900px) 100vw, 480px" alt="Extensión blanca de las Salinas Grandes bajo un cielo azul, entre Jujuy y Salta" width="1600" height="760" loading="lazy" decoding="async">
+  <figcaption>Salinas Grandes, en la Puna jujeña.</figcaption>
+ </figure>
+</section>
+
+<section class="franja franja-surf ejemplo" aria-labelledby="ejemplo-titulo">
+ <p class="etiqueta">Un ejemplo</p>
+ <h2 id="ejemplo-titulo">Datos inventados</h2>
+ <p>Boleta ficticia de agosto de 2026: cargo fijo <b>$4.772</b>; uso de red <b>$88,8382 por kWh</b>; consumo <b>189,5 kWh</b>; precio de la luz <b>$141,7971 por kWh</b>.</p>
+ <div class="resultado-ejemplo"><b>Resultado:</b> el cargo fijo y el uso de red coinciden. El precio de la luz no coincide con el valor que teníamos cargado: puede ser un ajuste del período, no un error. No hay cargos por pago tarde. Hay <b>una señal para verificar</b>: conviene pedir el desglose.</div>
+ <div class="senal-ejemplo"><b>Para verificar:</b> pedile a EJESA el desglose por renglón.</div>
+ <p>Es un ejemplo inventado, no una boleta real.</p>
+</section>
+
+<p class="independiente">Proyecto independiente. No somos EJESA ni un organismo oficial. Esta orientación no reemplaza un dictamen legal.</p>
+
+<details class="glosario" id="glosario">
+ <summary>Glosario (palabras técnicas)</summary>
+ <div><b>VAD:</b> el nombre técnico del cargo fijo y el uso de red. Son los valores por tener el servicio y usar la red; no cambian durante el trimestre.</div>
+ <div><b>Ajuste del período:</b> cuando el precio de la luz cambia durante el trimestre por decisiones nacionales. Antes le decíamos pass through.</div>
+ <div><b>Cuadro oficial:</b> los valores que el Gobierno publicó para ese período.</div>
+</details>
+
+</main>
+
+<footer>
+ Cuadros tarifarios del Boletín Oficial de Jujuy (Res. 168/296/420 de 2025 y 81/227/297 de 2026).
+ Orientación vecinal, no dictamen legal. Si algo no coincide, pedí el desglose a EJESA.
+ <div style="margin-top:8px"><a href="./creditos.html">Créditos de imágenes</a></div>
+ <div id="version-cuadros" class="estado" style="margin-top:8px"></div>
+</footer>
 </div>
 <script type="module" src="./app.js"></script>
 </body>

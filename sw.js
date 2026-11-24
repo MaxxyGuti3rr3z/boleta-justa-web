@@ -7,7 +7,10 @@ const ASSETS = [
   './tarifas.js', './tablas.js',
   './vendor/pdfjs/pdf.min.js', './vendor/pdfjs/pdf.worker.min.js',
   './vendor/pdfjs/LICENSE', './vendor/pdfjs/README.md',
-  './icons/icon-192.png', './icons/icon-512.png',
+  './icons/icon-192.png', './icons/icon-512.png', './creditos.html',
+  './img/hornocal-800.webp', './img/hornocal-1600.webp',
+  './img/quebrada-tilcara-800.webp', './img/quebrada-tilcara-1600.webp',
+  './img/salinas-800.webp', './img/salinas-1600.webp',
 ];
 
 let CACHE = 'boleta-justa-sin-version';
@@ -28,6 +31,8 @@ self.addEventListener('install', event => {
     if (version && version.cache) CACHE = version.cache;
     const c = await caches.open(CACHE);
     await c.addAll(ASSETS.map(destino));
+    await c.put(destino('./version-instalada.json'), new Response(
+      JSON.stringify({ cache: CACHE }), { headers: { 'content-type': 'application/json' } }));
     await self.skipWaiting();
   })());
 });
@@ -65,7 +70,10 @@ self.addEventListener('message', event => {
   if (tipo === 'CHECK_VERSION') {
     event.waitUntil((async () => {
       const version = await leerVersion();
-      if (version && version.cache && version.cache !== CACHE && event.source) {
+      const c = await caches.open(CACHE);
+      const marca = await c.match(destino('./version-instalada.json'));
+      const instalada = marca ? await marca.json() : null;
+      if (version && version.cache && instalada && instalada.cache !== version.cache && event.source) {
         event.source.postMessage({ type: 'NEW_VERSION', version });
       }
     })());

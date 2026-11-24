@@ -4,16 +4,34 @@ import { MENSAJE_CUADRO_NO_DISPONIBLE } from './auditoria.js';
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto',
                'septiembre','octubre','noviembre','diciembre'];
 
+// Los avisos se eligen por la resolución APLICADA, no por el mes de la boleta:
+// así las fuentes mostradas siempre corresponden al cuadro con el que se comparó.
 const AVISOS = {
-  valores_provisoriamente_facturados: {
-    titulo: 'Valores aplicados antes del cuadro definitivo: a verificar',
-    texto: 'Esta boleta corresponde a un período en el que algunos precios pudieron aplicarse antes de publicarse el cuadro definitivo, o ajustarse de forma automática por decisiones nacionales (pass through). Por eso no podemos afirmar, solo con este cuadro, que el importe facturado sea el final. A verificar: pedí a EJESA el desglose por renglón y la resolución que aplicó a tu boleta. Fuentes: Res. 476-SUSEPU/2025 (Boletín Nº 149, 29/12/2025), Res. 105-SUSEPU/2026 y Res. 104-SUSEPU/2026 (Boletín Nº 39, 01/04/2026). No calculamos diferencias, créditos ni saldos: esto es una señal para revisar, no un reclamo.',
-    meses: ['2025-12', '2026-02', '2026-03', '2026-04', '2026-08', '2026-09', '2026-10'],
+  '420': {
+    titulo: 'Precios de diciembre y enero: a verificar',
+    texto: 'Algunos precios pudieron aplicarse antes del cuadro definitivo. Pedí el desglose por renglón.',
+    detalle: 'La Res. 476 aprobó la energía de dic-25/ene-26 y las bonificaciones del Anexo I solo para diciembre de 2025. Sin el desglose no podemos afirmar que el importe sea el final.',
+    fuentes: ['Res. 476-SUSEPU/2025 — Boletín Oficial de Jujuy Nº 149, 29/12/2025'],
   },
-  rectificacion_posterior: {
+  '81': {
     titulo: 'Rectificación publicada después: a verificar',
-    texto: 'Para este mismo período se publicó después una resolución que cambió o aprobó valores. Lo que comparamos acá puede no coincidir con lo que se facturó en su momento, y eso por sí solo no dice quién tiene razón. A verificar: preguntá en EJESA qué resolución se aplicó a tu boleta y pedí el desglose. Fuentes: Res. 104-SUSEPU/2026 (rectifica la 81 para feb-abr/2026), Res. 476-SUSEPU/2025 (energía dic-25/ene-26) y la mención de la Res. 297-SUSEPU/2026 sobre boletas de may-jul/2026 emitidas con valores de la 105 y luego comparadas con la 227. No calculamos diferencias, créditos ni saldos: esto es una orientación, no un reclamo.',
-    meses: ['2025-12', '2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07'],
+    texto: 'Después se publicó una rectificación de estos valores. Pedí el desglose para ver cuál se aplicó.',
+    detalle: 'La Res. 104 rectificó la Res. 81 para feb-abr/2026 y la Res. 105 documentó bonificaciones adicionales. Lo que comparamos puede no coincidir con lo facturado en su momento.',
+    fuentes: ['Res. 104-SUSEPU/2026 — BO Nº 39, 01/04/2026',
+      'Res. 105-SUSEPU/2026 — BO Nº 39, 01/04/2026'],
+  },
+  '227': {
+    titulo: 'Ajustes durante el trimestre: a verificar',
+    texto: 'Los precios pueden ajustarse durante el trimestre. Conviene pedir el desglose.',
+    detalle: 'La Res. 227 rige may-jul/2026 y convive con resoluciones nacionales de ajuste. Algunas boletas de ese período se emitieron con valores de la Res. 105 y después se compararon con la 227.',
+    fuentes: ['Res. 227-SUSEPU/2026 — Boletín Oficial de Jujuy',
+      'Res. 297-SUSEPU/2026 (nota sobre boletas de may-jul/2026)'],
+  },
+  '297': {
+    titulo: 'Ajustes durante el trimestre: a verificar',
+    texto: 'Los precios pueden ajustarse durante el trimestre. Conviene pedir el desglose.',
+    detalle: 'La Res. 297 rige ago-oct/2026 e incorpora variaciones nacionales de precios durante el trimestre; el cargo fijo y el uso de red permanecen fijos.',
+    fuentes: ['Res. 297-SUSEPU/2026 — Boletín Oficial de Jujuy Nº 435659'],
   },
 };
 
@@ -25,9 +43,11 @@ function nombreMes(mes) {
 
 export function explicar(aud, boleta = {}) {
   const items = [];
+  const periodo = nombreMes(aud.mes);
+  const cuadro = aud.resolucion || null;
   if (aud.estado === 'cuadro_no_disponible') {
     return {
-      titulo: 'Todavía no podemos comparar esta boleta', estado: 'sin_cuadro',
+      titulo: 'Todavía no podemos comparar esta boleta', estado: 'sin_cuadro', periodo, cuadro,
       resumen: aud.mensaje || MENSAJE_CUADRO_NO_DISPONIBLE,
       items: [{ icono: 'ℹ️', titulo: 'Qué significa',
         texto: 'Necesitamos el cuadro tarifario oficial de ese trimestre para saber si los cargos coinciden. Mientras tanto no podemos afirmar que esté bien ni mal.' }],
@@ -38,7 +58,7 @@ export function explicar(aud, boleta = {}) {
   }
   if (aud.estado !== 'auditada') {
     return {
-      titulo: 'No pudimos auditar esta boleta', estado: 'sin_datos',
+      titulo: 'No pudimos auditar esta boleta', estado: 'sin_datos', periodo, cuadro,
       resumen: 'No encontramos en el PDF los renglones que necesitamos para comparar. Puede ser otro formato o de otra empresa.',
       items: [{ icono: 'ℹ️', titulo: 'Qué pasó', texto: 'Probá con una boleta de EJESA de los últimos años.' }],
       acciones: ['Si el PDF está completo y tampoco funciona, contanos para ajustar el lector.'],
@@ -78,18 +98,20 @@ export function explicar(aud, boleta = {}) {
     texto: 'Hay un interés por pago tardío, pero la boleta es anterior al Decreto 5658: esa prohibición no aplica en este caso.' });
 
   if (boleta.consistencia && boleta.consistencia.coincide_a_pagar === false)
-    items.push({ icono: '⚠️', titulo: 'La suma no cierra',
-      texto: 'Los renglones sumados no dan el total que figura como "Total a pagar". Pedí el desglose antes de pagar.' });
+    items.push({ icono: 'ℹ️', titulo: 'No pudimos verificar el total',
+      texto: 'No pudimos comparar la suma de los renglones con el total de la boleta. Pedí el desglose para revisarlo.' });
 
-  for (const [clave, aviso] of Object.entries(AVISOS))
-    if (aviso.meses.includes(aud.mes))
-      items.push({ icono: 'ℹ️', titulo: aviso.titulo, texto: aviso.texto, clave });
+  const resAplicada = String(aud.resolucion || '');
+  for (const [prefijo, aviso] of Object.entries(AVISOS))
+    if (resAplicada.startsWith(prefijo))
+      items.push({ icono: 'ℹ️', titulo: aviso.titulo, texto: aviso.texto,
+        detalle: aviso.detalle, fuentes: aviso.fuentes, clave: prefijo });
 
   const revisiones = items.filter(i => i.icono === '⚠️').length;
   const estado = revisiones ? 'a_revisar' : 'en_orden';
   const resumen = revisiones
-    ? `Comparamos tu boleta de ${nombreMes(aud.mes)} con las reglas oficiales de ese período. Encontramos ${revisiones} ${revisiones === 1 ? 'punto' : 'puntos'} que vale la pena revisar.`
-    : `Comparamos tu boleta de ${nombreMes(aud.mes)} con las reglas oficiales que correspondían en ese momento. No encontramos nada fuera de lugar.`;
+    ? `Comparamos tu boleta de ${periodo} con las reglas oficiales de ese período. Encontramos ${revisiones} ${revisiones === 1 ? 'punto' : 'puntos'} que vale la pena revisar.`
+    : `Comparamos tu boleta de ${periodo} con las reglas oficiales que correspondían en ese momento. No encontramos nada fuera de lugar.`;
 
   const acciones = [];
   if (revisiones) acciones.push('Pedí en EJESA el desglose por renglón antes de pagar o reclamar.');
@@ -105,5 +127,5 @@ export function explicar(aud, boleta = {}) {
     { termino: 'Interés punitorio', significado: 'Un cargo extra por pagar después de la fecha de vencimiento.' },
   ];
 
-  return { titulo: `Tu boleta de ${nombreMes(aud.mes)}`, estado, resumen, items, acciones, glosario };
+  return { titulo: `Tu boleta de ${periodo}`, estado, periodo, cuadro, resumen, items, acciones, glosario };
 }

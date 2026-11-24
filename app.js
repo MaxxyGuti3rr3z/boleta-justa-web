@@ -8,7 +8,19 @@ import { TABLAS } from './tablas.js';
 import { construir as construirPayload } from './payload.js';
 import * as hist from './history.js';
 import { armarResumen, copiar, enlaceWhatsApp } from './resumen.js';
-import { tieneSenales, armarReclamo, descargarTxt } from './reclamo.js';
+import { armarReclamo, descargarTxt } from './reclamo.js';
+
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto',
+  'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+function rangoVigencia(v) {
+  if (!v) return '';
+  const [ai, mi] = v.desde.slice(0, 7).split('-');
+  const [af, mf] = v.hasta.slice(0, 7).split('-');
+  const ini = MESES[Number(mi) - 1] || mi;
+  const fin = MESES[Number(mf) - 1] || mf;
+  return ai === af ? ` (${ini} a ${fin} de ${af})` : ` (${ini} de ${ai} a ${fin} de ${af})`;
+}
 
 // Ruta relativa al módulo: funciona aunque el sitio esté en /boleta-justa-web/
 pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -59,26 +71,57 @@ async function lineasDelPdf(file) {
   return salida;
 }
 
+function scrollA(el) {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' });
+}
+
 function pintar(x) {
-  const items = x.items.map(i => `<div class="item"><span>${i.icono}</span>` +
-    `<div><b>${i.titulo}</b><p>${i.texto}</p></div></div>`).join('');
+  const items = x.items.map(i => {
+    const extra = i.clave ? `<details class="fuentes-detalle"><summary>Ver detalle y fuentes</summary>` +
+      `<p>${i.detalle || ''}</p>` +
+      `<ul>${(i.fuentes || []).map(f => `<li>${f}</li>`).join('')}</ul></details>` : '';
+    return `<li class="item${i.clave ? ' aviso' : ''}">` +
+      `<span class="icono" aria-hidden="true">${i.icono}</span>` +
+      `<div><b>${i.titulo}</b><p>${i.texto}</p>${extra}</div></li>`;
+  }).join('');
   const acciones = x.acciones.map(a => `<li>${a}</li>`).join('');
   const glosario = x.glosario.map(g => `<div><b>${g.termino}:</b> ${g.significado}</div>`).join('');
-  let haySenales = false;
-  try { haySenales = !!(ultimoPayload && tieneSenales(ultimoPayload)); } catch { haySenales = false; }
-  const botones = (ultimoPayload && ultimoPayload.auditoria) ? `<div class="fila">
-    <button type="button" id="btn-resumen" aria-label="Copiar resumen para WhatsApp">Copiar resumen</button>
-    <button type="button" id="btn-wa" aria-label="Abrir WhatsApp con el resumen">WhatsApp</button>
-    ${haySenales ? '<button type="button" id="btn-reclamo" aria-label="Preparar solicitud de desglose a EJESA">Preparar solicitud</button>' : ''}
+
+  const estado = x.estado === 'en_orden'
+    ? { clase: 'coincide', icono: '✓', texto: 'Coincide con el cuadro oficial' }
+    : x.estado === 'a_revisar'
+      ? { clase: 'senales', icono: '!', texto: 'Hay señales para verificar' }
+      : { clase: 'sin-cuadro', icono: '?',
+          texto: x.estado === 'sin_datos' ? 'No pudimos leer esta boleta'
+                                         : 'No tenemos el cuadro de este período' };
+
+  const botones = (ultimoPayload && ultimoPayload.auditoria) ? `<div class="botones-resultado">
+    <button type="button" id="btn-reclamo" class="primario" aria-label="Generar solicitud de desglose a EJESA">Generar solicitud de desglose</button>
+    <button type="button" id="btn-resumen" class="secundario" aria-label="Copiar resumen para WhatsApp">Copiar resumen</button>
+    <button type="button" id="btn-wa" class="secundario" aria-label="Abrir WhatsApp con el resumen">WhatsApp</button>
   </div>` : '';
-  $('resultado').innerHTML = `<div class="expl ${x.estado}">
-    <h2>${x.titulo}</h2><p class="resumen">${x.resumen}</p>
-    ${items}
+
+  const tabla = TABLAS.find(t => t.resolucion === x.cuadro);
+  const vigencia = rangoVigencia(tabla && tabla.vigencia);
+  const contexto = (x.periodo || x.cuadro)
+    ? `<p class="contexto">Período facturado: <b>${x.periodo || 'sin período'}</b>` +
+      (x.cuadro ? ` · Cuadro aplicado: <b>${x.cuadro}${vigencia}</b>` : '') + `</p>`
+    : '';
+
+  $('resultado').innerHTML = `<section class="resultado" aria-label="Resultado de la auditoría">
+    <p class="estado-resultado ${estado.clase}"><span aria-hidden="true">${estado.icono}</span> ${estado.texto}</p>
+    <h2 id="titulo-resultado" tabindex="-1">${x.titulo}</h2>
+    ${contexto}
+    <p class="resumen">${x.resumen}</p>
+    <ul class="detalle">${items}</ul>
     <div class="acciones"><b>Qué podés hacer</b><ul>${acciones}</ul></div>
-    <details><summary>Ver glosario (palabras raras)</summary>${glosario}</details>
     ${botones}
-  </div>`;
-  $('resultado').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    <details><summary>Glosario (palabras técnicas)</summary>${glosario}</details>
+  </section>`;
+  scrollA($('resultado'));
+  const tituloResultado = $('titulo-resultado');
+  if (tituloResultado) tituloResultado.focus({ preventScroll: true });
   conectarAcciones();
 }
 
@@ -100,7 +143,7 @@ function conectarAcciones() {
   const bReclamo = $('btn-reclamo');
   if (bReclamo) bReclamo.onclick = () => {
     $('reclamo-card').hidden = false;
-    $('reclamo-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    scrollA($('reclamo-card'));
   };
 }
 
@@ -123,11 +166,11 @@ boton.addEventListener('click', async () => {
       $('manual-card').hidden = false;
       $('resultado').innerHTML = '';
       estado.textContent = 'Este PDF parece una imagen. Podés cargar los datos a mano.';
-      $('manual-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      scrollA($('manual-card'));
       return;
     }
     analizarBoleta(parsear(lineas));
-    estado.textContent = 'Listo. Nada se subió ni se guardó.';
+    estado.textContent = 'Leímos tu boleta en tu dispositivo. Nada se subió ni se guardó.';
   } catch (e) {
     $('resultado').innerHTML = `<div class="expl a_revisar"><h2>No pudimos leer el PDF</h2>
       <p class="resumen error">${String(e && e.message || e)}</p>
@@ -141,6 +184,7 @@ boton.addEventListener('click', async () => {
 /* ---------- historial local (sin cuenta, sin servidor) ---------- */
 function renderHistorial() {
   const items = hist.listar();
+  $('hist-card').open = items.length > 0;
   $('hist-lista').innerHTML = items.length
     ? items.map(i => `<div class="hist-item"><span>${i.mes || 'sin mes'} · ${i.resolucion || '—'}</span>` +
         `<span><button type="button" data-ver="${i.id}">Ver</button> ` +
@@ -174,7 +218,7 @@ $('exportar-json').onclick = () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'boleta-justa-analyisis.json';
+  a.download = `boleta-justa-respaldo-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
 };
@@ -191,8 +235,17 @@ $('importar-json').addEventListener('change', async ev => {
 });
 
 $('borrar-todo').onclick = () => {
+  const n = hist.listar().length;
+  $('dialogo-borrar-mensaje').textContent = `¿Borrar los ${n} análisis guardados? No se puede deshacer`;
+  $('dialogo-borrar').showModal();
+};
+
+$('cancelar-borrado').onclick = () => $('dialogo-borrar').close();
+
+$('confirmar-borrado').onclick = () => {
   hist.borrarTodo();
   renderHistorial();
+  $('dialogo-borrar').close();
   estado.textContent = 'Historial borrado de este dispositivo.';
 };
 
