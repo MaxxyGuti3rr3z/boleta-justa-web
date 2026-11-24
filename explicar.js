@@ -1,7 +1,21 @@
 /* Explicación en lenguaje llano — port de src/explicar.js. */
+import { MENSAJE_CUADRO_NO_DISPONIBLE } from './auditoria.js';
 
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto',
                'septiembre','octubre','noviembre','diciembre'];
+
+const AVISOS = {
+  valores_provisoriamente_facturados: {
+    titulo: 'Valores aplicados antes del cuadro definitivo: a verificar',
+    texto: 'Esta boleta corresponde a un período en el que algunos precios pudieron aplicarse antes de publicarse el cuadro definitivo, o ajustarse de forma automática por decisiones nacionales (pass through). Por eso no podemos afirmar, solo con este cuadro, que el importe facturado sea el final. A verificar: pedí a EJESA el desglose por renglón y la resolución que aplicó a tu boleta. Fuentes: Res. 476-SUSEPU/2025 (Boletín Nº 149, 29/12/2025), Res. 105-SUSEPU/2026 y Res. 104-SUSEPU/2026 (Boletín Nº 39, 01/04/2026). No calculamos diferencias, créditos ni saldos: esto es una señal para revisar, no un reclamo.',
+    meses: ['2025-12', '2026-02', '2026-03', '2026-04', '2026-08', '2026-09', '2026-10'],
+  },
+  rectificacion_posterior: {
+    titulo: 'Rectificación publicada después: a verificar',
+    texto: 'Para este mismo período se publicó después una resolución que cambió o aprobó valores. Lo que comparamos acá puede no coincidir con lo que se facturó en su momento, y eso por sí solo no dice quién tiene razón. A verificar: preguntá en EJESA qué resolución se aplicó a tu boleta y pedí el desglose. Fuentes: Res. 104-SUSEPU/2026 (rectifica la 81 para feb-abr/2026), Res. 476-SUSEPU/2025 (energía dic-25/ene-26) y la mención de la Res. 297-SUSEPU/2026 sobre boletas de may-jul/2026 emitidas con valores de la 105 y luego comparadas con la 227. No calculamos diferencias, créditos ni saldos: esto es una orientación, no un reclamo.',
+    meses: ['2025-12', '2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07'],
+  },
+};
 
 function nombreMes(mes) {
   if (!mes || !mes.includes('-')) return 'esa boleta';
@@ -11,6 +25,17 @@ function nombreMes(mes) {
 
 export function explicar(aud, boleta = {}) {
   const items = [];
+  if (aud.estado === 'cuadro_no_disponible') {
+    return {
+      titulo: 'Todavía no podemos comparar esta boleta', estado: 'sin_cuadro',
+      resumen: aud.mensaje || MENSAJE_CUADRO_NO_DISPONIBLE,
+      items: [{ icono: 'ℹ️', titulo: 'Qué significa',
+        texto: 'Necesitamos el cuadro tarifario oficial de ese trimestre para saber si los cargos coinciden. Mientras tanto no podemos afirmar que esté bien ni mal.' }],
+      acciones: ['Pedile a EJESA el desglose de tu boleta.',
+        'Cuando carguemos el cuadro, vas a poder compararla acá.'],
+      glosario: [],
+    };
+  }
   if (aud.estado !== 'auditada') {
     return {
       titulo: 'No pudimos auditar esta boleta', estado: 'sin_datos',
@@ -55,6 +80,10 @@ export function explicar(aud, boleta = {}) {
   if (boleta.consistencia && boleta.consistencia.coincide_a_pagar === false)
     items.push({ icono: '⚠️', titulo: 'La suma no cierra',
       texto: 'Los renglones sumados no dan el total que figura como "Total a pagar". Pedí el desglose antes de pagar.' });
+
+  for (const [clave, aviso] of Object.entries(AVISOS))
+    if (aviso.meses.includes(aud.mes))
+      items.push({ icono: 'ℹ️', titulo: aviso.titulo, texto: aviso.texto, clave });
 
   const revisiones = items.filter(i => i.icono === '⚠️').length;
   const estado = revisiones ? 'a_revisar' : 'en_orden';

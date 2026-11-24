@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0c0e12">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png" type="image/png">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; form-action 'self'; base-uri 'self'; object-src 'none'">
 <title>Boleta Justa · sin servidor</title>
 <style>
 :root{--fondo:#0c0e12;--superficie:#14171d;--borde:#242a35;--tinta:#e8eaf0;--suave:#9aa3b2;
@@ -15,6 +19,10 @@ header{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.05re
 .rayo{background:var(--acento);color:var(--acento-tinta);border-radius:8px;padding:3px 8px}
 .privacidad{background:var(--verde-fondo);border:1px solid rgba(52,211,153,.4);border-radius:var(--radio);
 padding:16px 18px;margin-bottom:22px;color:var(--verde);font-size:.9rem}
+.update-banner{display:flex;gap:12px;align-items:center;justify-content:space-between;
+  background:var(--acento-suave);border:1px solid rgba(255,194,51,.5);border-radius:var(--radio);
+  padding:12px 16px;margin-bottom:18px;font-size:.85rem}
+.update-banner[hidden]{display:none}
 h1{font-size:clamp(1.7rem,4vw,2.6rem);margin:0 0 8px;line-height:1.15}
 .lead{color:var(--suave);margin:0 0 28px;max-width:620px}
 .card{background:var(--superficie);border:1px solid var(--borde);border-radius:var(--radio);padding:24px;margin-bottom:18px}
@@ -29,9 +37,22 @@ input[type=file]{display:none}
 .hist-item{display:flex;gap:10px;align-items:center;justify-content:space-between;
   border-top:1px solid var(--borde);padding:9px 0;font-size:.82rem}
 .hist-item button{padding:6px 10px;font-size:.75rem}
+#reclamo-card input,#reclamo-card textarea{background:var(--superficie2);border:1px solid var(--borde);
+  color:var(--tinta);border-radius:8px;padding:9px 11px;font-family:inherit;font-size:.85rem}
+#reclamo-card textarea{width:100%;margin-top:12px;resize:vertical;line-height:1.5}
+#reclamo-card label{font-size:.8rem;color:var(--suave)}
+#manual-card[hidden]{display:none}
+.campo{display:block;margin:12px 0}
+.campo span{display:block;font-size:.82rem;color:var(--tinta);margin-bottom:4px}
+.campo small{display:block;color:var(--suave);font-size:.72rem;margin-top:4px;line-height:1.4}
+.campo input{width:100%;background:var(--superficie2);border:1px solid var(--borde);
+  color:var(--tinta);border-radius:8px;padding:10px 12px;font-family:inherit}
+.campo.checkbox{display:flex;gap:10px;align-items:flex-start}
+.campo.checkbox input{width:auto;margin-top:2px}
 #resultado:empty{display:none}
 .expl{border-left:4px solid var(--verde);background:var(--superficie);border-radius:var(--radio);padding:22px 24px;margin-bottom:16px}
 .expl.a_revisar{border-left-color:var(--acento)}
+.expl.sin_cuadro{border-left-color:var(--acento)}
 .expl h2{font-size:1.2rem;margin:0 0 6px}
 .resumen{color:var(--suave);font-size:.9rem;margin:0 0 14px}
 .item{display:grid;grid-template-columns:26px 1fr;gap:10px;padding:11px 0;border-top:1px solid var(--borde)}
@@ -51,6 +72,11 @@ footer{color:var(--suave);font-size:.75rem;margin-top:28px;border-top:1px solid 
     nunca se sube, no se guarda y no se comparte. Podés usar esto incluso desconectado de internet
     (salvo la primera carga de la librería de lectura de PDF).</div>
 
+  <div class="update-banner" id="update-banner" hidden role="status" aria-live="polite">
+    <span>Hay una nueva versión de los cuadros tarifarios. Actualizá para verla.</span>
+    <button type="button" id="btn-actualizar" aria-label="Actualizar a la nueva versión">Actualizar</button>
+  </div>
+
   <h1>Auditá tu boleta de luz sin subirla a ningún lado</h1>
   <p class="lead">Elegí el PDF de EJESA y te explicamos, con palabras simples, si los cargos
     coinciden con el cuadro oficial de ese trimestre.</p>
@@ -67,6 +93,37 @@ footer{color:var(--suave);font-size:.75rem;margin-top:28px;border-top:1px solid 
   </div>
 
   <div id="resultado"></div>
+  <p id="accion-estado" class="estado" role="status" aria-live="polite"></p>
+
+  <div class="card" id="manual-card" hidden>
+    <span class="dec-tag">Carga manual</span>
+    <h2>Cargá los datos de tu boleta</h2>
+    <p class="card-sub">Sin OCR: completá los renglones que figuran en tu boleta. Solo se usan datos de facturación.</p>
+    <form id="manual-form" novalidate>
+      <div id="manual-campos"></div>
+      <div class="fila">
+        <button type="submit" aria-label="Analizar los datos cargados manualmente">Analizar datos cargados</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card" id="reclamo-card" hidden>
+    <span class="dec-tag">Solicitud de desglose</span>
+    <h2>Prepará una solicitud a EJESA</h2>
+    <p class="card-sub">Completá tus datos a mano: no se guardan ni se envían. El texto se arma en este navegador y lo copiás o descargás.</p>
+    <div class="fila">
+      <label for="rec-nombre">Nombre del titular</label>
+      <input id="rec-nombre" placeholder="[COMPLETAR]" autocomplete="off" aria-label="Nombre del titular, no se guarda">
+      <label for="rec-suministro">N° de suministro</label>
+      <input id="rec-suministro" placeholder="[COMPLETAR]" autocomplete="off" aria-label="Número de suministro, no se guarda">
+    </div>
+    <div class="fila">
+      <button type="button" id="btn-rec-generar" aria-label="Generar texto de la solicitud">Generar texto</button>
+      <button type="button" id="btn-rec-copiar" aria-label="Copiar la solicitud" disabled>Copiar</button>
+      <button type="button" id="btn-rec-descargar" aria-label="Descargar la solicitud como txt" disabled>Descargar .txt</button>
+    </div>
+    <textarea id="rec-texto" rows="12" readonly aria-label="Texto de la solicitud generada"></textarea>
+  </div>
 
   <div class="card" id="hist-card">
     <span class="dec-tag">Historial en tu dispositivo</span>
@@ -85,6 +142,7 @@ footer{color:var(--suave);font-size:.75rem;margin-top:28px;border-top:1px solid 
   <footer>
     Cuadros tarifarios del Boletín Oficial de Jujuy (Res. 168/296/420 de 2025 y 81/227/297 de 2026).
     Orientación vecinal, no dictamen legal. Si algo no coincide, pedí el desglose a EJESA.
+    <div id="version-cuadros" class="estado" style="margin-top:8px"></div>
   </footer>
 </div>
 <script type="module" src="./app.js"></script>

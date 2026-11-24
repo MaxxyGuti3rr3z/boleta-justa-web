@@ -3,6 +3,12 @@
 
 const VIGENCIA_DESDE = '2026-07-20';
 const VIGENCIA_HASTA = '2027-12-31';
+const UMBRAL_CONFIANZA_BAJA = 3.0;
+
+export const MENSAJE_CUADRO_NO_DISPONIBLE =
+  'Todavía no tenemos cargado el cuadro tarifario de este período, así que no podemos compararlo. Podés pedirle a EJESA el desglose.';
+export const MENSAJE_SIN_DATOS_VAD =
+  'No encontramos en el PDF los renglones necesarios para comparar. Probá con otra boleta de EJESA.';
 
 export function mesDe(fecha) {
   if (!fecha) return null;
@@ -49,7 +55,9 @@ export function seleccionarTabla(boleta, tablas) {
     if (!mejor || score < mejor.score) mejor = { tabla: t, score };
   }
   if (!mejor) return { tabla: null, score: 0, confianza: 'sin cuadros' };
-  const confianza = mejor.score < 0.5 ? 'alta' : (mejor.score < 3 ? 'media' : 'baja');
+  const confianza = mejor.score < 0.5 ? 'alta' :
+    (mejor.score < UMBRAL_CONFIANZA_BAJA ? 'media' : 'baja');
+  if (confianza === 'baja') return { tabla: null, score: Math.round(mejor.score * 100) / 100, confianza: 'baja' };
   return { tabla: mejor.tabla, score: Math.round(mejor.score * 100) / 100, confianza };
 }
 
@@ -76,14 +84,31 @@ export function precioRedPorBloques(cats, kwh) {
   return Math.round(total / kwh * 1e6) / 1e6;
 }
 
+export function categoriasEfectivas(tabla, mes) {
+  const cats = tabla.t1_residencial.categorias;
+  if (!mes) return cats;
+  const sub = (tabla.subperiodos || []).find(s =>
+    s.desde.slice(0, 7) <= mes && mes <= s.hasta.slice(0, 7) &&
+    s.alcance === 't1_residencial.categorias[].energia_plena_kwh');
+  if (!sub || !sub.valores) return cats;
+  return cats.map(c => sub.valores[c.id] === undefined ? c :
+    { ...c, energia_plena_kwh: Number(sub.valores[c.id]) });
+}
+
 export function auditar(boleta, tablas) {
   const mes = mesDe(boleta?.fecha_emision);
   const { tabla, score, confianza } = seleccionarTabla(boleta, tablas);
   const tablaFecha = tablaPara(mes, tablas);
   const base = { mes, categoria_boleta: boleta?.categoria, confianza, score_vad_pct: score };
-  if (!tabla) return { ...base, estado: 'sin_cuadro_cargado', resolucion: null };
+  if (!tabla) {
+    const sinCuadro = confianza === 'baja';
+    return { ...base,
+      estado: sinCuadro ? 'cuadro_no_disponible' : 'sin_cuadro_cargado',
+      resolucion: null,
+      mensaje: sinCuadro ? MENSAJE_CUADRO_NO_DISPONIBLE : MENSAJE_SIN_DATOS_VAD };
+  }
 
-  const cats = tabla.t1_residencial.categorias;
+  const cats = categoriasEfectivas(tabla, mes);
   const e = boleta.energia || {};
   const catFijo = cercana(cats, 'cargo_fijo', e.cargo_fijo);
   const catRed = cercana(cats, 'uso_red_kwh', e.precio_red);

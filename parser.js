@@ -7,7 +7,7 @@ const FECHA = /\d{1,2}\/\d{1,2}\/\d{2,4}/;
 const NUMERO = /\d[\d.,]*/g;
 const CATEGORIA = /\bT\d+[A-Z]{0,4}\b/;
 
-function aFloat(s) {
+export function aFloat(s) {
   if (s === null || s === undefined) return undefined;
   const t = String(s).trim();
   if (t.includes(',')) return parseFloat(t.replace(/\./g, '').replace(',', '.'));
@@ -27,6 +27,16 @@ function precioKwh(linea) {
 
 function numeros(linea) {
   return [...linea.matchAll(NUMERO)].map(m => m[0]);
+}
+
+/** Detecta si el texto extraído del PDF sirve para la auditoría.
+    Un PDF escaneado suele dar pocas líneas y ningún renglón tarifario. */
+export function esTextoUtil(lineas) {
+  const utiles = (lineas || []).map(l => String(l || '').trim()).filter(l => l.length > 2);
+  if (utiles.length < 5) return false;
+  const texto = utiles.join('\n').toUpperCase();
+  const marcadores = ['CARGO FIJO', 'USO DE RED', 'CONSUMO', 'ENERGÍA', 'IMPUESTO', 'TOTAL'];
+  return marcadores.filter(m => texto.includes(m)).length >= 2;
 }
 
 export function parsear(lineas) {
